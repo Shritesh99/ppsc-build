@@ -1,4 +1,4 @@
-# Protocol Buffers Parity SCALE Codec Builder
+# Protocol Buffers Parity SCALE Codec Generator
 
 It generates Rust code from source .proto files using the proto2 or proto3 syntax. It's goal is to make the generated code as simple as possible in [Parity SCALE Codec](https://github.com/paritytech/parity-scale-codec) fromat.
 
