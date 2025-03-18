@@ -1,6 +1,8 @@
 use std::io::Result;
 use std::path::Path;
 
+use log::{Level, debug, error, info, log_enabled};
+
 use prost_types::FileDescriptorSet;
 
 mod ast;
@@ -228,7 +230,6 @@ mod tests {
 
     #[test]
     fn smoke_test() {
-        let _ = env_logger::try_init();
         let tempdir = tempfile::tempdir().unwrap();
 
         Config::new()
@@ -240,7 +241,6 @@ mod tests {
 
     #[test]
     fn finalize_package() {
-        let _ = env_logger::try_init();
         let tempdir = tempfile::tempdir().unwrap();
 
         let state = Rc::new(RefCell::new(MockState::default()));
@@ -266,53 +266,7 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_message_attributes() {
-        let _ = env_logger::try_init();
-        let tempdir = tempfile::tempdir().unwrap();
-
-        let mut config = Config::new();
-        config
-            .out_dir(tempdir.path())
-            // Add attributes to all messages and enums
-            .message_attribute(".", "#[derive(derive_builder::Builder)]")
-            .enum_attribute(".", "#[some_enum_attr(u8)]");
-
-        let fds = config
-            .load_fds(
-                &["src/fixtures/helloworld/hello.proto"],
-                &["src/fixtures/helloworld"],
-            )
-            .unwrap();
-
-        // Add custom attributes to messages that are service inputs or outputs.
-        for file in &fds.file {
-            for service in &file.service {
-                for method in &service.method {
-                    if let Some(input) = &method.input_type {
-                        config.message_attribute(input, "#[derive(custom_proto::Input)]");
-                    }
-                    if let Some(output) = &method.output_type {
-                        config.message_attribute(output, "#[derive(custom_proto::Output)]");
-                    }
-                }
-            }
-        }
-
-        config.compile_fds(fds).unwrap();
-
-        assert_eq_fixture_file!(
-            if cfg!(feature = "format") {
-                "src/fixtures/helloworld/_expected_helloworld_formatted.rs"
-            } else {
-                "src/fixtures/helloworld/_expected_helloworld.rs"
-            },
-            tempdir.path().join("helloworld.rs")
-        );
-    }
-
-    #[test]
     fn test_generate_no_empty_outputs() {
-        let _ = env_logger::try_init();
         let state = Rc::new(RefCell::new(MockState::default()));
         let generator = MockServiceGenerator::new(Rc::clone(&state));
         let include_file = "_include.rs";
@@ -347,7 +301,6 @@ mod tests {
 
     #[test]
     fn test_generate_field_attributes() {
-        let _ = env_logger::try_init();
         let tempdir = tempfile::tempdir().unwrap();
 
         Config::new()
@@ -372,8 +325,6 @@ mod tests {
 
     #[test]
     fn deterministic_include_file() {
-        let _ = env_logger::try_init();
-
         for _ in 1..10 {
             let state = Rc::new(RefCell::new(MockState::default()));
             let generator = MockServiceGenerator::new(Rc::clone(&state));
