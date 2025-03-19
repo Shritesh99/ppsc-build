@@ -113,6 +113,9 @@ impl<'b> CodeGenerator<'_, 'b> {
             code_gen.package
         );
 
+        code_gen
+            .buf
+            .push_str("use parity_scale_codec::{Encode, Decode};");
         code_gen.path.push(4);
         for (idx, message) in file.message_type.into_iter().enumerate() {
             code_gen.path.push(idx as i32);
@@ -222,19 +225,19 @@ impl<'b> CodeGenerator<'_, 'b> {
         self.append_type_attributes(&fq_message_name);
         self.append_message_attributes(&fq_message_name);
         self.push_indent();
-        // self.buf.push_str(&format!(
-        //     "#[derive(Clone, {}PartialEq, {}{}::Message)]\n",
-        //     if self.context.can_message_derive_copy(&fq_message_name) {
-        //         "Copy, "
-        //     } else {
-        //         ""
-        //     },
-        //     if self.context.can_message_derive_eq(&fq_message_name) {
-        //         "Eq, Hash, "
-        //     } else {
-        //         ""
-        //     }
-        // ));
+        self.buf.push_str(&format!(
+            "#[derive(Clone, {}PartialEq, {}, Encode, Decode)]\n",
+            if self.context.can_message_derive_copy(&fq_message_name) {
+                "Copy, "
+            } else {
+                ""
+            },
+            if self.context.can_message_derive_eq(&fq_message_name) {
+                "Eq, Hash, "
+            } else {
+                ""
+            }
+        ));
         self.append_skip_debug(&fq_message_name);
         self.push_indent();
         self.buf.push_str("pub struct ");
@@ -602,16 +605,15 @@ impl<'b> CodeGenerator<'_, 'b> {
             self.context
                 .can_field_derive_eq(fq_message_name, &field.descriptor)
         });
-        // self.buf.push_str(&format!(
-        //     "#[derive(Clone, {}PartialEq, {}{}::Oneof)]\n",
-        //     if can_oneof_derive_copy { "Copy, " } else { "" },
-        //     if can_oneof_derive_eq {
-        //         "Eq, Hash, "
-        //     } else {
-        //         ""
-        //     },
-        //     self.context.prost_path()
-        // ));
+        self.buf.push_str(&format!(
+            "#[derive(Clone, {}PartialEq, {}, Encode, Decode)]\n",
+            if can_oneof_derive_copy { "Copy, " } else { "" },
+            if can_oneof_derive_eq {
+                "Eq, Hash, "
+            } else {
+                ""
+            }
+        ));
         self.append_skip_debug(fq_message_name);
         self.push_indent();
         self.buf.push_str("pub enum ");
@@ -715,9 +717,7 @@ impl<'b> CodeGenerator<'_, 'b> {
             "Debug, "
         };
         // self.buf.push_str(&format!(
-        //     "#[derive(Clone, Copy, {}PartialEq, Eq, Hash, PartialOrd, Ord, {}::Enumeration)]\n",
-        //     dbg,
-        //     self.context.prost_path(),
+        //     "#[derive(Clone, Copy, {}PartialEq, Eq, Hash, PartialOrd, Ord, {}::Enumeration)]\n"
         // ));
         self.push_indent();
         self.buf.push_str("#[repr(i32)]\n");
@@ -936,8 +936,7 @@ impl<'b> CodeGenerator<'_, 'b> {
             Type::Int32 | Type::Sfixed32 | Type::Sint32 | Type::Enum => String::from("i32"),
             Type::Int64 | Type::Sfixed64 | Type::Sint64 => String::from("i64"),
             Type::Bool => String::from("bool"),
-            // TODO: ADD parity scale codec string
-            Type::String => format!("{}::alloc::string::String", ""),
+            Type::String => String::from("String"),
             Type::Bytes => self
                 .context
                 .bytes_type(fq_message_name, field.name())
