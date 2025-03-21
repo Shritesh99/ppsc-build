@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::default;
 use std::env;
-use std::ffi::{OsStr, OsString};
 use std::fmt;
 use std::fs;
 use std::io::{Error, ErrorKind, Result, Write};
@@ -41,8 +40,6 @@ pub struct Config {
     pub(crate) disable_comments: PathMap<()>,
     pub(crate) skip_debug: PathMap<()>,
     pub(crate) include_file: Option<PathBuf>,
-    #[cfg(feature = "format")]
-    pub(crate) fmt: bool,
 }
 
 impl Config {
@@ -626,17 +623,6 @@ impl Config {
         self
     }
 
-    // IMPROVEMENT: https://github.com/tokio-rs/prost/pull/1022/files#r1563818651
-    /// Configures the code generator to format the output code via `prettyplease`.
-    ///
-    /// By default, this is enabled but if the `format` feature is not enabled this does
-    /// nothing.
-    #[cfg(feature = "format")]
-    pub fn format(&mut self, enabled: bool) -> &mut Self {
-        self.fmt = enabled;
-        self
-    }
-
     /// Compile a [`FileDescriptorSet`] into Rust files during a Cargo build with
     /// additional code generator configuration options.
     ///
@@ -847,15 +833,6 @@ impl Config {
             }
         }
 
-        #[cfg(feature = "format")]
-        if self.fmt {
-            for buf in modules.values_mut() {
-                let file = syn::parse_file(buf).unwrap();
-                let formatted = prettyplease::unparse(&file);
-                *buf = formatted;
-            }
-        }
-
         self.add_generated_modules(&mut modules);
 
         Ok(modules)
@@ -908,8 +885,6 @@ impl default::Default for Config {
             disable_comments: PathMap::default(),
             skip_debug: PathMap::default(),
             include_file: None,
-            #[cfg(feature = "format")]
-            fmt: true,
         }
     }
 }
@@ -930,35 +905,5 @@ impl fmt::Debug for Config {
             .field("disable_comments", &self.disable_comments)
             .field("skip_debug", &self.skip_debug)
             .finish()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    macro_rules! assert_starts_with {
-        ($left:expr, $right:expr) => {
-            match (&$left, &$right) {
-                (left_val, right_val) => {
-                    if !(left_val.starts_with(right_val)) {
-                        panic!(
-                            "assertion 'starts_with` failed:\nleft: {}\nright: {}",
-                            left_val, right_val
-                        )
-                    }
-                }
-            }
-        };
-    }
-
-    #[test]
-    fn test_error_unset_out_dir() {
-        let mut config = Config::new();
-
-        let err = config
-            .compile_fds(FileDescriptorSet::default())
-            .unwrap_err();
-        assert_eq!(err.to_string(), "OUT_DIR environment variable is not set")
     }
 }

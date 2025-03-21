@@ -1,5 +1,3 @@
-use std::ascii;
-use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::iter;
 
@@ -10,8 +8,7 @@ use prost_types::field_descriptor_proto::{Label, Type};
 use prost_types::source_code_info::Location;
 use prost_types::{
     DescriptorProto, EnumDescriptorProto, EnumValueDescriptorProto, FieldDescriptorProto,
-    FieldOptions, FileDescriptorProto, OneofDescriptorProto, ServiceDescriptorProto,
-    SourceCodeInfo,
+    FileDescriptorProto, OneofDescriptorProto, ServiceDescriptorProto, SourceCodeInfo,
 };
 
 use crate::Config;
@@ -20,7 +17,6 @@ use crate::context::Context;
 use crate::ident::{strip_enum_prefix, to_snake, to_upper_camel};
 
 mod c_escaping;
-use c_escaping::unescape_c_escape_string;
 
 mod syntax;
 use syntax::Syntax;

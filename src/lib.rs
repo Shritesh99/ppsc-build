@@ -1,8 +1,6 @@
 use std::io::Result;
 use std::path::Path;
 
-use log::{Level, debug, error, info, log_enabled};
-
 use prost_types::FileDescriptorSet;
 
 mod ast;

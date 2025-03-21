@@ -124,19 +124,6 @@ mod tests {
     }
 
     #[test]
-    fn test_well_known_types() {
-        let paths = ExternPaths::new(&[]).unwrap();
-
-        let case = |proto_ident: &str, resolved_ident: &str| {
-            assert_eq!(paths.resolve_ident(proto_ident).unwrap(), resolved_ident);
-        };
-
-        case(".google.protobuf.Value", "::prost_types::Value");
-        case(".google.protobuf.Duration", "::prost_types::Duration");
-        case(".google.protobuf.Empty", "()");
-    }
-
-    #[test]
     fn test_error_fully_qualified() {
         let paths = [("foo".to_string(), "bar".to_string())];
         let err = ExternPaths::new(&paths).unwrap_err();

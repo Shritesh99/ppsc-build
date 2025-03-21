@@ -21,14 +21,6 @@ pub(crate) enum BytesType {
 }
 
 impl MapType {
-    /// The `prost-derive` annotation type corresponding to the map type.
-    pub fn annotation(&self) -> &'static str {
-        match self {
-            MapType::HashMap => "map",
-            MapType::BTreeMap => "btree_map",
-        }
-    }
-
     /// The fully-qualified Rust type corresponding to the map type.
     pub fn rust_type(&self) -> &'static str {
         match self {
@@ -39,14 +31,6 @@ impl MapType {
 }
 
 impl BytesType {
-    /// The `prost-derive` annotation type corresponding to the bytes type.
-    pub fn annotation(&self) -> &'static str {
-        match self {
-            BytesType::Vec => "vec",
-            BytesType::Bytes => "bytes",
-        }
-    }
-
     /// The fully-qualified Rust type corresponding to the bytes type.
     pub fn rust_type(&self) -> &'static str {
         match self {
