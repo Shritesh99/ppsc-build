@@ -74,11 +74,6 @@ impl MessageGraph {
         }
     }
 
-    /// Try get a message descriptor from current message graph
-    pub fn get_message(&self, message: &str) -> Option<&DescriptorProto> {
-        self.messages.get(message)
-    }
-
     /// Returns true if message type `inner` is nested in message type `outer`.
     pub fn is_nested(&self, outer: &str, inner: &str) -> bool {
         let outer = match self.index.get(outer) {
