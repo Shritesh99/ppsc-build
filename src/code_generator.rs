@@ -401,15 +401,18 @@ impl<'b> CodeGenerator<'_, 'b> {
 
     fn append_oneof_field(
         &mut self,
-        _message_name: &str,
+        message_name: &str,
         fq_message_name: &str,
         oneof: &OneofField,
     ) {
-        let type_name = format!("{}", to_upper_camel(oneof.descriptor.name()));
+        let type_name = format!(
+            "{}::{}",
+            to_snake(message_name),
+            to_upper_camel(oneof.descriptor.name())
+        );
         self.append_doc(fq_message_name, None);
         self.push_indent();
         self.append_field_attributes(fq_message_name, oneof.descriptor.name());
-        self.push_indent();
         self.buf.push_str(&format!(
             "pub {}: Option<{}>,\n",
             oneof.rust_name(),
@@ -427,6 +430,9 @@ impl<'b> CodeGenerator<'_, 'b> {
         let oneof_name = format!("{}.{}", fq_message_name, oneof.descriptor.name());
         self.append_type_attributes(&oneof_name);
         self.append_enum_attributes(&oneof_name);
+        self.push_indent();
+        self.buf
+            .push_str("use parity_scale_codec::{Decode, Encode};\n\n");
         self.push_indent();
         self.buf.push_str(&format!("#[derive(Encode, Decode)]\n"));
         self.push_indent();
