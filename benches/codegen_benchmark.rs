@@ -1,120 +1,81 @@
-// use alloc::collections::BTreeMap;
-// use criterion::{Criterion, black_box, criterion_group, criterion_main};
-// use parity_scale_codec::{Decode, Encode};
-// use prost::Message;
-// use std::time::Duration;
+#![cfg_attr(not(feature = "std"), no_std)]
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+use libc_print::std_name::{dbg, eprintln, println};
 
-// // Make imports available for the included code
-// #[allow(unused_imports)]
-// extern crate alloc;
+#[cfg(not(feature = "std"))]
+use alloc::collections::BTreeMap;
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+use core::time::Duration;
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use parity_scale_codec::{Decode, Encode};
 
-// // Generated code from ppsc-build
-// include!("tmp/network.protocol.rs");
+// Generated code from ppsc-build
+include!("tmp/network.protocol.rs");
 
-// // Generated code from prost-build
-// mod prost_generated {
-//     include!("tmp/network.protocol.prost.rs");
-// }
+fn create_ppsc_transaction() -> TransactionRequest {
+    TransactionRequest {
+        is_priority: false,
+        transaction_id: 12345,
+        creation_time: 1710000000,
+        memo: String::from("test_transaction"),
+        associated_ids: Vec::new(),
+        metadata: BTreeMap::new(),
+        sender: Some(Entity {
+            id: String::from("sender123"),
+            ip_address: 0x7f000001,
+        }),
+        status: TransactionStatus::StatusPending as i32,
+        result: None,
+    }
+}
 
-// fn create_ppsc_transaction() -> TransactionRequest {
-//     TransactionRequest {
-//         is_priority: true,
-//         transaction_id: 123,
-//         creation_time: 456,
-//         memo: "test".to_string(),
-//         associated_ids: vec!["id1".to_string(), "id2".to_string()],
-//         metadata: BTreeMap::from([("key1".to_string(), 1), ("key2".to_string(), 2)]),
-//         sender: None,
-//         status: 1,
-//         result: None,
-//     }
-// }
+fn bench_ppsc_encoding(c: &mut Criterion) {
+    let mut group = c.benchmark_group("ppsc_encoding");
+    group.measurement_time(Duration::from_secs(10));
+    group.sample_size(100);
 
-// fn create_prost_transaction() -> prost_generated::TransactionRequest {
-//     prost_generated::TransactionRequest {
-//         is_priority: false,
-//         transaction_id: 12345,
-//         creation_time: 1710000000,
-//         memo: "test_transaction".into(),
-//         associated_ids: Vec::new(),
-//         metadata: std::collections::HashMap::new(),
-//         sender: Some(prost_generated::Entity {
-//             id: "sender123".into(),
-//             ip_address: 0x7f000001,
-//         }),
-//         status: prost_generated::TransactionStatus::StatusPending as i32,
-//         result: None,
-//     }
-// }
+    let ppsc_tx = create_ppsc_transaction();
 
-// fn bench_encoding(c: &mut Criterion) {
-//     let mut group = c.benchmark_group("encoding");
-//     group.measurement_time(Duration::from_secs(10));
-//     group.sample_size(100);
+    group.bench_function("ppsc_encode", |b| b.iter(|| black_box(&ppsc_tx).encode()));
 
-//     let ppsc_tx = create_ppsc_transaction();
-//     let prost_tx = create_prost_transaction();
+    group.finish();
+}
 
-//     group.bench_function("ppsc_encode", |b| b.iter(|| black_box(&ppsc_tx).encode()));
+fn bench_ppsc_decoding(c: &mut Criterion) {
+    let mut group = c.benchmark_group("ppsc_decoding");
+    group.measurement_time(Duration::from_secs(10));
+    group.sample_size(100);
 
-//     group.bench_function("prost_encode", |b| {
-//         b.iter(|| {
-//             let mut buf = Vec::new();
-//             black_box(&prost_tx).encode(&mut buf).unwrap();
-//             buf
-//         })
-//     });
+    let ppsc_encoded = create_ppsc_transaction().encode();
 
-//     group.finish();
-// }
+    group.bench_function("ppsc_decode", |b| {
+        b.iter(|| TransactionRequest::decode(&mut &ppsc_encoded[..]))
+    });
 
-// fn bench_decoding(c: &mut Criterion) {
-//     let mut group = c.benchmark_group("decoding");
-//     group.measurement_time(Duration::from_secs(10));
-//     group.sample_size(100);
+    group.finish();
+}
 
-//     let ppsc_encoded = create_ppsc_transaction().encode();
-//     let mut prost_encoded = Vec::new();
-//     create_prost_transaction()
-//         .encode(&mut prost_encoded)
-//         .unwrap();
+fn bench_ppsc_size(c: &mut Criterion) {
+    let mut group = c.benchmark_group("ppsc_message_size");
+    group.measurement_time(Duration::from_secs(10));
+    group.sample_size(100);
 
-//     group.bench_function("ppsc_decode", |b| {
-//         b.iter(|| TransactionRequest::decode(&mut &ppsc_encoded[..]))
-//     });
+    let ppsc_tx = create_ppsc_transaction();
+    let ppsc_encoded = ppsc_tx.encode();
+    let ppsc_size = ppsc_encoded.len();
+    println!("PPSC encoded size: {} bytes", ppsc_size);
 
-//     group.bench_function("prost_decode", |b| {
-//         b.iter(|| prost_generated::TransactionRequest::decode(prost_encoded.as_slice()).unwrap())
-//     });
+    group.finish();
+}
 
-//     group.finish();
-// }
-
-// fn bench_size_comparison(c: &mut Criterion) {
-//     let mut group = c.benchmark_group("message_size");
-//     group.measurement_time(Duration::from_secs(10));
-//     group.sample_size(100);
-
-//     let ppsc_tx = create_ppsc_transaction();
-//     let prost_tx = create_prost_transaction();
-
-//     let ppsc_encoded = ppsc_tx.encode();
-//     let ppsc_size = ppsc_encoded.len();
-
-//     let mut prost_buf = Vec::new();
-//     prost_tx.encode(&mut prost_buf).unwrap();
-//     let prost_size = prost_buf.len();
-
-//     println!("PPSC encoded size: {} bytes", ppsc_size);
-//     println!("Prost encoded size: {} bytes", prost_size);
-
-//     group.finish();
-// }
-
-// criterion_group!(
-//     benches,
-//     bench_encoding,
-//     bench_decoding,
-//     bench_size_comparison
-// );
-// criterion_main!(benches);
+criterion_group!(
+    ppsc_benches,
+    bench_ppsc_encoding,
+    bench_ppsc_decoding,
+    bench_ppsc_size
+);
+criterion_main!(ppsc_benches);
