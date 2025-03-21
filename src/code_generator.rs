@@ -112,10 +112,13 @@ impl<'b> CodeGenerator<'_, 'b> {
             file.name.as_ref().unwrap(),
             code_gen.package
         );
-
+        code_gen.buf.push_str("#![no_std]\n");
+        code_gen.buf.push_str("extern crate alloc;\n");
+        code_gen.buf.push_str("use alloc;\n");
         code_gen
             .buf
-            .push_str("use parity_scale_codec::{Encode, Decode};");
+            .push_str("use parity_scale_codec::{Encode, Decode};\n\n");
+
         code_gen.path.push(4);
         for (idx, message) in file.message_type.into_iter().enumerate() {
             code_gen.path.push(idx as i32);
@@ -225,21 +228,8 @@ impl<'b> CodeGenerator<'_, 'b> {
         self.append_type_attributes(&fq_message_name);
         self.append_message_attributes(&fq_message_name);
         self.push_indent();
-        self.buf.push_str(&format!(
-            "#[derive(Clone, {}PartialEq, {}, Encode, Decode)]\n",
-            if self.context.can_message_derive_copy(&fq_message_name) {
-                "Copy, "
-            } else {
-                ""
-            },
-            if self.context.can_message_derive_eq(&fq_message_name) {
-                "Eq, Hash, "
-            } else {
-                ""
-            }
-        ));
-        self.append_skip_debug(&fq_message_name);
-        self.push_indent();
+        self.buf.push_str(&format!("#[derive(Encode, Decode)]\n"));
+        // self.append_skip_debug(&fq_message_name);
         self.buf.push_str("pub struct ");
         self.buf.push_str(&to_upper_camel(&message_name));
         self.buf.push_str(" {\n");
@@ -297,51 +287,6 @@ impl<'b> CodeGenerator<'_, 'b> {
 
             self.pop_mod();
         }
-
-        if self.config().enable_type_names {
-            self.append_type_name(&message_name, &fq_message_name);
-        }
-    }
-
-    fn append_type_name(&mut self, message_name: &str, fq_message_name: &str) {
-        // let prost_path = self.context.prost_path();
-
-        // self.buf.push_str(&format!(
-        //     "impl {prost_path}::Name for {} {{\n",
-        //     to_upper_camel(message_name)
-        // ));
-        self.depth += 1;
-
-        self.buf.push_str(&format!(
-            "const NAME: &'static str = \"{}\";\n",
-            message_name,
-        ));
-        self.buf.push_str(&format!(
-            "const PACKAGE: &'static str = \"{}\";\n",
-            self.package,
-        ));
-
-        // let string_path = format!("{prost_path}::alloc::string::String");
-
-        // let full_name = format!(
-        //     "{}{}{}{}{message_name}",
-        //     self.package.trim_matches('.'),
-        //     if self.package.is_empty() { "" } else { "." },
-        //     self.type_path.join("."),
-        //     if self.type_path.is_empty() { "" } else { "." },
-        // );
-        // let domain_name = self.context.type_name_domain(fq_message_name);
-
-        // self.buf.push_str(&format!(
-        //     r#"fn full_name() -> {string_path} {{ "{full_name}".into() }}"#,
-        // ));
-
-        // self.buf.push_str(&format!(
-        //     r#"fn type_url() -> {string_path} {{ "{domain_name}/{full_name}".into() }}"#,
-        // ));
-
-        self.depth -= 1;
-        self.buf.push_str("}\n");
     }
 
     fn append_type_attributes(&mut self, fq_message_name: &str) {
@@ -358,14 +303,6 @@ impl<'b> CodeGenerator<'_, 'b> {
         for attribute in self.context.message_attributes(fq_message_name) {
             push_indent(self.buf, self.depth);
             self.buf.push_str(attribute);
-            self.buf.push('\n');
-        }
-    }
-
-    fn append_skip_debug(&mut self, fq_message_name: &str) {
-        if self.context.should_skip_debug(fq_message_name) {
-            push_indent(self.buf, self.depth);
-            self.buf.push_str("#[prost(skip_debug)]");
             self.buf.push('\n');
         }
     }
@@ -389,9 +326,7 @@ impl<'b> CodeGenerator<'_, 'b> {
     }
 
     fn append_field(&mut self, fq_message_name: &str, field: &Field) {
-        let type_ = field.descriptor.r#type();
         let repeated = field.descriptor.label() == Label::Repeated;
-        let deprecated = self.deprecated(&field.descriptor);
         let optional = self.optional(&field.descriptor);
         let boxed = self
             .context
@@ -407,99 +342,20 @@ impl<'b> CodeGenerator<'_, 'b> {
 
         self.append_doc(fq_message_name, Some(field.descriptor.name()));
 
-        if deprecated {
-            self.push_indent();
-            self.buf.push_str("#[deprecated]\n");
-        }
-
-        self.push_indent();
-        self.buf.push_str("#[prost(");
-        let type_tag = self.field_type_tag(&field.descriptor);
-        self.buf.push_str(&type_tag);
-
-        if type_ == Type::Bytes {
-            let bytes_type = self
-                .context
-                .bytes_type(fq_message_name, field.descriptor.name());
-            self.buf
-                .push_str(&format!("={:?}", bytes_type.annotation()));
-        }
-
-        match field.descriptor.label() {
-            Label::Optional => {
-                if optional {
-                    self.buf.push_str(", optional");
-                }
-            }
-            Label::Required => self.buf.push_str(", required"),
-            Label::Repeated => {
-                self.buf.push_str(", repeated");
-                if can_pack(&field.descriptor)
-                    && !field
-                        .descriptor
-                        .options
-                        .as_ref()
-                        .map_or(self.syntax == Syntax::Proto3, |options| options.packed())
-                {
-                    self.buf.push_str(", packed=\"false\"");
-                }
-            }
-        }
-
-        if boxed {
-            self.buf.push_str(", boxed");
-        }
-        self.buf.push_str(", tag=\"");
-        self.buf.push_str(&field.descriptor.number().to_string());
-
-        if let Some(ref default) = field.descriptor.default_value {
-            self.buf.push_str("\", default=\"");
-            if type_ == Type::Bytes {
-                self.buf.push_str("b\\\"");
-                for b in unescape_c_escape_string(default) {
-                    self.buf.extend(
-                        ascii::escape_default(b).flat_map(|c| (c as char).escape_default()),
-                    );
-                }
-                self.buf.push_str("\\\"");
-            } else if type_ == Type::Enum {
-                let mut enum_value = to_upper_camel(default);
-                if self.config().strip_enum_prefix {
-                    // Field types are fully qualified, so we extract
-                    // the last segment and strip it from the left
-                    // side of the default value.
-                    let enum_type = field
-                        .descriptor
-                        .type_name
-                        .as_ref()
-                        .and_then(|ty| ty.split('.').next_back())
-                        .unwrap();
-
-                    enum_value = strip_enum_prefix(&to_upper_camel(enum_type), &enum_value)
-                }
-                self.buf.push_str(&enum_value);
-            } else {
-                self.buf.push_str(&default.escape_default().to_string());
-            }
-        }
-
-        self.buf.push_str("\")]\n");
         self.append_field_attributes(fq_message_name, field.descriptor.name());
         self.push_indent();
         self.buf.push_str("pub ");
         self.buf.push_str(&field.rust_name());
         self.buf.push_str(": ");
 
-        // if repeated {
-        //     self.buf
-        //         .push_str(&format!("{}::alloc::vec::Vec<", prost_path));
-        // } else if optional {
-        //     self.buf.push_str("::core::option::Option<");
-        // }
-        // if boxed {
-        //     self.buf
-        //         .push_str(&format!("{}::alloc::boxed::Box<", prost_path));
-        // }
+        if repeated {
+            self.buf.push_str(&format!("alloc::vec::Vec<"));
+        } else if optional {
+            self.buf.push_str("Option<");
+        }
+        if boxed {
+            self.buf.push_str(&format!("alloc::boxed::Box<"));
+        }
         self.buf.push_str(&ty);
         if boxed {
             self.buf.push('>');
@@ -528,21 +384,10 @@ impl<'b> CodeGenerator<'_, 'b> {
         );
 
         self.append_doc(fq_message_name, Some(field.descriptor.name()));
-        self.push_indent();
 
         let map_type = self
             .context
             .map_type(fq_message_name, field.descriptor.name());
-        let key_tag = self.field_type_tag(key);
-        let value_tag = self.map_value_type_tag(value);
-
-        self.buf.push_str(&format!(
-            "#[prost({}=\"{}, {}\", tag=\"{}\")]\n",
-            map_type.annotation(),
-            key_tag,
-            value_tag,
-            field.descriptor.number()
-        ));
         self.append_field_attributes(fq_message_name, field.descriptor.name());
         self.push_indent();
         self.buf.push_str(&format!(
@@ -556,30 +401,17 @@ impl<'b> CodeGenerator<'_, 'b> {
 
     fn append_oneof_field(
         &mut self,
-        message_name: &str,
+        _message_name: &str,
         fq_message_name: &str,
         oneof: &OneofField,
     ) {
-        let type_name = format!(
-            "{}::{}",
-            to_snake(message_name),
-            to_upper_camel(oneof.descriptor.name())
-        );
+        let type_name = format!("{}", to_upper_camel(oneof.descriptor.name()));
         self.append_doc(fq_message_name, None);
         self.push_indent();
-        self.buf.push_str(&format!(
-            "#[prost(oneof=\"{}\", tags=\"{}\")]\n",
-            type_name,
-            oneof
-                .fields
-                .iter()
-                .map(|field| field.descriptor.number())
-                .join(", "),
-        ));
         self.append_field_attributes(fq_message_name, oneof.descriptor.name());
         self.push_indent();
         self.buf.push_str(&format!(
-            "pub {}: ::core::option::Option<{}>,\n",
+            "pub {}: Option<{}>,\n",
             oneof.rust_name(),
             type_name
         ));
@@ -596,25 +428,7 @@ impl<'b> CodeGenerator<'_, 'b> {
         self.append_type_attributes(&oneof_name);
         self.append_enum_attributes(&oneof_name);
         self.push_indent();
-
-        let can_oneof_derive_copy = oneof.fields.iter().all(|field| {
-            self.context
-                .can_field_derive_copy(fq_message_name, &field.descriptor)
-        });
-        let can_oneof_derive_eq = oneof.fields.iter().all(|field| {
-            self.context
-                .can_field_derive_eq(fq_message_name, &field.descriptor)
-        });
-        self.buf.push_str(&format!(
-            "#[derive(Clone, {}PartialEq, {}, Encode, Decode)]\n",
-            if can_oneof_derive_copy { "Copy, " } else { "" },
-            if can_oneof_derive_eq {
-                "Eq, Hash, "
-            } else {
-                ""
-            }
-        ));
-        self.append_skip_debug(fq_message_name);
+        self.buf.push_str(&format!("#[derive(Encode, Decode)]\n"));
         self.push_indent();
         self.buf.push_str("pub enum ");
         self.buf.push_str(&to_upper_camel(oneof.descriptor.name()));
@@ -628,15 +442,8 @@ impl<'b> CodeGenerator<'_, 'b> {
             self.path.pop();
 
             self.push_indent();
-            let ty_tag = self.field_type_tag(&field.descriptor);
-            self.buf.push_str(&format!(
-                "#[prost({}, tag=\"{}\")]\n",
-                ty_tag,
-                field.descriptor.number()
-            ));
             self.append_field_attributes(&oneof_name, field.descriptor.name());
 
-            self.push_indent();
             let ty = self.resolve_type(&field.descriptor, fq_message_name);
 
             let boxed = self.context.should_box_oneof_field(
@@ -654,7 +461,7 @@ impl<'b> CodeGenerator<'_, 'b> {
 
             if boxed {
                 self.buf.push_str(&format!(
-                    "{}(::prost::alloc::boxed::Box<{}>),\n",
+                    "{}(alloc::boxed::Box<{}>),\n",
                     to_upper_camel(field.descriptor.name()),
                     ty
                 ));
@@ -711,17 +518,8 @@ impl<'b> CodeGenerator<'_, 'b> {
         self.append_type_attributes(&fq_proto_enum_name);
         self.append_enum_attributes(&fq_proto_enum_name);
         self.push_indent();
-        let dbg = if self.context.should_skip_debug(&fq_proto_enum_name) {
-            ""
-        } else {
-            "Debug, "
-        };
-        // self.buf.push_str(&format!(
-        //     "#[derive(Clone, Copy, {}PartialEq, Eq, Hash, PartialOrd, Ord, {}::Enumeration)]\n"
-        // ));
-        self.push_indent();
-        self.buf.push_str("#[repr(i32)]\n");
-        self.push_indent();
+
+        self.buf.push_str(&format!("#[derive(Encode, Decode)]\n"));
         self.buf.push_str("pub enum ");
         self.buf.push_str(&enum_name);
         self.buf.push_str(" {\n");
@@ -804,7 +602,7 @@ impl<'b> CodeGenerator<'_, 'b> {
 
         self.push_indent();
         self.buf
-            .push_str("pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {\n");
+            .push_str("pub fn from_str_name(value: &str) -> Option<Self> {\n");
         self.depth += 1;
 
         self.push_indent();
@@ -984,42 +782,6 @@ impl<'b> CodeGenerator<'_, 'b> {
             .join("::")
     }
 
-    fn field_type_tag(&self, field: &FieldDescriptorProto) -> Cow<'static, str> {
-        match field.r#type() {
-            Type::Float => Cow::Borrowed("float"),
-            Type::Double => Cow::Borrowed("double"),
-            Type::Int32 => Cow::Borrowed("int32"),
-            Type::Int64 => Cow::Borrowed("int64"),
-            Type::Uint32 => Cow::Borrowed("uint32"),
-            Type::Uint64 => Cow::Borrowed("uint64"),
-            Type::Sint32 => Cow::Borrowed("sint32"),
-            Type::Sint64 => Cow::Borrowed("sint64"),
-            Type::Fixed32 => Cow::Borrowed("fixed32"),
-            Type::Fixed64 => Cow::Borrowed("fixed64"),
-            Type::Sfixed32 => Cow::Borrowed("sfixed32"),
-            Type::Sfixed64 => Cow::Borrowed("sfixed64"),
-            Type::Bool => Cow::Borrowed("bool"),
-            Type::String => Cow::Borrowed("string"),
-            Type::Bytes => Cow::Borrowed("bytes"),
-            Type::Group => Cow::Borrowed("group"),
-            Type::Message => Cow::Borrowed("message"),
-            Type::Enum => Cow::Owned(format!(
-                "enumeration={:?}",
-                self.resolve_ident(field.type_name())
-            )),
-        }
-    }
-
-    fn map_value_type_tag(&self, field: &FieldDescriptorProto) -> Cow<'static, str> {
-        match field.r#type() {
-            Type::Enum => Cow::Owned(format!(
-                "enumeration({})",
-                self.resolve_ident(field.type_name())
-            )),
-            _ => self.field_type_tag(field),
-        }
-    }
-
     fn optional(&self, field: &FieldDescriptorProto) -> bool {
         if field.proto3_optional.unwrap_or(false) {
             return true;
@@ -1035,11 +797,6 @@ impl<'b> CodeGenerator<'_, 'b> {
         }
     }
 
-    /// Returns `true` if the field options includes the `deprecated` option.
-    fn deprecated(&self, field: &FieldDescriptorProto) -> bool {
-        field.options.as_ref().is_some_and(FieldOptions::deprecated)
-    }
-
     /// Returns the fully-qualified name, starting with a dot
     fn fq_name(&self, message_name: &str) -> String {
         format!(
@@ -1051,27 +808,6 @@ impl<'b> CodeGenerator<'_, 'b> {
             message_name,
         )
     }
-}
-
-/// Returns `true` if the repeated field type can be packed.
-fn can_pack(field: &FieldDescriptorProto) -> bool {
-    matches!(
-        field.r#type(),
-        Type::Float
-            | Type::Double
-            | Type::Int32
-            | Type::Int64
-            | Type::Uint32
-            | Type::Uint64
-            | Type::Sint32
-            | Type::Sint64
-            | Type::Fixed32
-            | Type::Fixed64
-            | Type::Sfixed32
-            | Type::Sfixed64
-            | Type::Bool
-            | Type::Enum
-    )
 }
 
 struct EnumVariantMapping<'a> {

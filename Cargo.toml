@@ -16,3 +16,14 @@ prost-types = "0.13.5"
 protox = "0.7.2"
 regex = "1.11.1"
 tempfile = "3.19.0"
+
+[build-dependencies]
+prost-build = "0.13.5"
+
+[dev-dependencies]
+criterion = "0.5"
+parity-scale-codec = { version = "3.6.5", features = ["derive"] }
+
+[[bench]]
+name = "codegen_benchmark"
+harness = false

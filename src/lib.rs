@@ -314,11 +314,7 @@ mod tests {
             .unwrap();
 
         assert_eq_fixture_file!(
-            if cfg!(feature = "format") {
-                "src/fixtures/field_attributes/_expected_field_attributes_formatted.rs"
-            } else {
-                "src/fixtures/field_attributes/_expected_field_attributes.rs"
-            },
+            "src/fixtures/field_attributes/_expected_field_attributes.rs",
             tempdir.path().join("field_attributes.rs")
         );
     }
@@ -379,5 +375,23 @@ mod tests {
             .unwrap();
         let actual = String::from_utf8(buf).unwrap();
         assert_eq_fixture_contents!("src/fixtures/write_includes/_.includes.rs", actual);
+    }
+
+    #[test]
+    fn network_protocol() {
+        let tempdir = tempfile::tempdir().unwrap();
+
+        Config::new()
+            .out_dir(tempdir.path())
+            .compile_protos(
+                &["src/fixtures/network_protocol/network_protocol.proto"],
+                &["src/fixtures/network_protocol"],
+            )
+            .unwrap();
+
+        assert_eq_fixture_file!(
+            "src/fixtures/network_protocol/_expected_network_protocol.rs",
+            tempdir.path().join("network.protocol.rs")
+        );
     }
 }

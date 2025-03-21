@@ -1,0 +1,34 @@
+syntax = "proto3";
+package network.protocol;
+
+enum TransactionStatus {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_PENDING = 1;
+  STATUS_CONFIRMED = 2;
+  STATUS_REJECTED = 3;
+}
+
+message Entity {
+  string id = 1;
+  fixed32 ip_address = 2;
+}
+
+message AmountDetails {
+  uint64 value = 1;
+  bool is_locked = 2;
+}
+
+message TransactionRequest {
+  bool is_priority = 1;
+  uint64 transaction_id = 2;
+  sfixed64 creation_time = 3;
+  string memo = 4;
+  repeated string associated_ids = 5;
+  map<string, uint32> metadata = 6;
+  Entity sender = 7;
+  oneof result {
+    string error = 8;
+    AmountDetails amount = 9;
+  }
+  TransactionStatus status = 10;
+}

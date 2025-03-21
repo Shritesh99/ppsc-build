@@ -2,10 +2,10 @@
 #[non_exhaustive]
 #[derive(Default, Clone, Copy, Debug, PartialEq)]
 pub(crate) enum MapType {
-    /// The [`std::collections::HashMap`] type.
+    /// The [`alloc::collections::BTreeMap`] type.
     #[default]
     HashMap,
-    /// The [`std::collections::BTreeMap`] type.
+    /// The [`alloc::collections::BTreeMap`] type.
     BTreeMap,
 }
 
@@ -13,7 +13,7 @@ pub(crate) enum MapType {
 #[non_exhaustive]
 #[derive(Default, Clone, Copy, Debug, PartialEq)]
 pub(crate) enum BytesType {
-    /// The [`prost::alloc::vec::Vec<u8>`] type.
+    /// The [`alloc::vec::Vec<u8>`] type.
     #[default]
     Vec,
     /// The [`bytes::Bytes`](prost::bytes::Bytes) type.
@@ -32,8 +32,8 @@ impl MapType {
     /// The fully-qualified Rust type corresponding to the map type.
     pub fn rust_type(&self) -> &'static str {
         match self {
-            MapType::HashMap => "HashMap",
-            MapType::BTreeMap => "BTreeMap",
+            MapType::HashMap => "alloc::collections::BTreeMap",
+            MapType::BTreeMap => "alloc::collections::BTreeMap",
         }
     }
 }
@@ -50,7 +50,7 @@ impl BytesType {
     /// The fully-qualified Rust type corresponding to the bytes type.
     pub fn rust_type(&self) -> &'static str {
         match self {
-            BytesType::Vec => "Vec<u8>",
+            BytesType::Vec => "alloc::vec::Vec<u8>",
             BytesType::Bytes => "Bytes",
         }
     }

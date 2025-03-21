@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
+use petgraph::Graph;
 use petgraph::algo::has_path_connecting;
 use petgraph::graph::NodeIndex;
-use petgraph::Graph;
 
 use prost_types::{
-    field_descriptor_proto::{Label, Type},
     DescriptorProto, FileDescriptorProto,
+    field_descriptor_proto::{Label, Type},
 };
 
 /// `MessageGraph` builds a graph of messages whose edges correspond to nesting.
