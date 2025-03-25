@@ -376,7 +376,7 @@ mod tests {
     }
 
     #[test]
-    fn network_protocol() {
+    fn test_network_protocol() {
         let tempdir = tempfile::tempdir().unwrap();
 
         Config::new()
@@ -390,6 +390,24 @@ mod tests {
         assert_eq_fixture_file!(
             "src/fixtures/network_protocol/_expected_network_protocol.rs",
             tempdir.path().join("network.protocol.rs")
+        );
+    }
+
+    #[test]
+    fn test_tutorial() {
+        let tempdir = tempfile::tempdir().unwrap();
+
+        Config::new()
+            .out_dir(tempdir.path())
+            .compile_protos(
+                &["src/fixtures/tutorial/tutorial.proto"],
+                &["src/fixtures/tutorial"],
+            )
+            .unwrap();
+
+        assert_eq_fixture_file!(
+            "src/fixtures/tutorial/_expected_tutorial.rs",
+            tempdir.path().join("tutorial.rs")
         );
     }
 }

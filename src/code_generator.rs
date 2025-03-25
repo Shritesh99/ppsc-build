@@ -108,9 +108,8 @@ impl<'b> CodeGenerator<'_, 'b> {
             file.name.as_ref().unwrap(),
             code_gen.package
         );
-        code_gen.buf.push_str("#![no_std]\n");
         code_gen.buf.push_str("extern crate alloc;\n");
-        code_gen.buf.push_str("use alloc;\n");
+        code_gen.push_indent();
         code_gen
             .buf
             .push_str("use parity_scale_codec::{Encode, Decode};\n\n");
@@ -226,6 +225,7 @@ impl<'b> CodeGenerator<'_, 'b> {
         self.push_indent();
         self.buf.push_str(&format!("#[derive(Encode, Decode)]\n"));
         // self.append_skip_debug(&fq_message_name);
+        self.push_indent();
         self.buf.push_str("pub struct ");
         self.buf.push_str(&to_upper_camel(&message_name));
         self.buf.push_str(" {\n");
@@ -262,6 +262,11 @@ impl<'b> CodeGenerator<'_, 'b> {
         if !message.enum_type.is_empty() || !nested_types.is_empty() || !oneof_fields.is_empty() {
             self.push_mod(&message_name);
             self.path.push(3);
+            self.push_indent();
+            self.buf.push_str("extern crate alloc;\n");
+            self.push_indent();
+            self.buf
+                .push_str("use parity_scale_codec::{Decode, Encode};\n\n");
             for (nested_type, idx) in nested_types {
                 self.path.push(idx as i32);
                 self.append_message(nested_type);
@@ -427,8 +432,6 @@ impl<'b> CodeGenerator<'_, 'b> {
         self.append_type_attributes(&oneof_name);
         self.append_enum_attributes(&oneof_name);
         self.push_indent();
-        self.buf
-            .push_str("use parity_scale_codec::{Decode, Encode};\n\n");
         self.push_indent();
         self.buf.push_str(&format!("#[derive(Encode, Decode)]\n"));
         self.push_indent();
@@ -522,6 +525,7 @@ impl<'b> CodeGenerator<'_, 'b> {
         self.push_indent();
 
         self.buf.push_str(&format!("#[derive(Encode, Decode)]\n"));
+        self.push_indent();
         self.buf.push_str("pub enum ");
         self.buf.push_str(&enum_name);
         self.buf.push_str(" {\n");
