@@ -4,19 +4,18 @@ use parity_scale_codec::{Encode, Decode};
 
 #[derive(Encode, Decode)]
 pub struct Person {
-    pub name: String,
+    pub name: alloc::string::String,
     pub id: i32,
-    pub email: String,
+    pub email: alloc::string::String,
     pub phones: alloc::vec::Vec<person::PhoneNumber>,
 }
 /// Nested message and enum types in `Person`.
 pub mod person {
-    extern crate alloc;
-    use parity_scale_codec::{Decode, Encode};
+    use super::*;
 
     #[derive(Encode, Decode)]
     pub struct PhoneNumber {
-        pub number: String,
+        pub number: alloc::string::String,
         pub r#type: i32,
     }
     #[derive(Encode, Decode)]

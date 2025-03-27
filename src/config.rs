@@ -66,7 +66,7 @@ impl Config {
     /// # Examples
     ///
     /// ```rust
-    /// # let mut config = prost_build::Config::new();
+    /// # let mut config = ppsc_build::Config::new();
     /// // Match a specific field in a message type.
     /// config.btree_map(&[".my_messages.MyMessageType.my_map_field"]);
     ///
@@ -127,7 +127,7 @@ impl Config {
     /// # Examples
     ///
     /// ```rust
-    /// # let mut config = prost_build::Config::new();
+    /// # let mut config = ppsc_build::Config::new();
     /// // Match a specific field in a message type.
     /// config.bytes(&[".my_messages.MyMessageType.my_bytes_field"]);
     ///
@@ -187,7 +187,7 @@ impl Config {
     /// # Examples
     ///
     /// ```rust
-    /// # let mut config = prost_build::Config::new();
+    /// # let mut config = ppsc_build::Config::new();
     /// // Prost renames fields named `in` to `in_`. But if serialized through serde,
     /// // they should as `in`.
     /// config.field_attribute("in", "#[serde(rename = \"in\")]");
@@ -222,7 +222,7 @@ impl Config {
     /// # Examples
     ///
     /// ```rust
-    /// # let mut config = prost_build::Config::new();
+    /// # let mut config = ppsc_build::Config::new();
     /// // Nothing around uses floats, so we can derive real `Eq` in addition to `PartialEq`.
     /// config.type_attribute(".", "#[derive(Eq)]");
     /// // Some messages want to be serializable with serde as well.
@@ -271,7 +271,7 @@ impl Config {
     /// # Examples
     ///
     /// ```rust
-    /// # let mut config = prost_build::Config::new();
+    /// # let mut config = ppsc_build::Config::new();
     /// // Nothing around uses floats, so we can derive real `Eq` in addition to `PartialEq`.
     /// config.message_attribute(".", "#[derive(Eq)]");
     /// // Some messages want to be serializable with serde as well.
@@ -310,7 +310,7 @@ impl Config {
     /// # Examples
     ///
     /// ```rust
-    /// # let mut config = prost_build::Config::new();
+    /// # let mut config = ppsc_build::Config::new();
     /// // Nothing around uses floats, so we can derive real `Eq` in addition to `PartialEq`.
     /// config.enum_attribute(".", "#[derive(Eq)]");
     /// // Some messages want to be serializable with serde as well.
@@ -349,7 +349,7 @@ impl Config {
     /// # Examples
     ///
     /// ```rust
-    /// # let mut config = prost_build::Config::new();
+    /// # let mut config = ppsc_build::Config::new();
     /// config.boxed(".my_messages.MyMessageType.my_field");
     /// ```
     pub fn boxed<P>(&mut self, path: P) -> &mut Self
@@ -377,7 +377,7 @@ impl Config {
     ///
     /// ```rust,no_run
     /// # fn main() -> std::io::Result<()> {
-    /// let mut config = prost_build::Config::new();
+    /// let mut config = ppsc_build::Config::new();
     /// config.disable_comments(&["."]);
     /// config.compile_protos(&["src/frontend.proto", "src/backend.proto"], &["src"])?;
     /// #     Ok(())
@@ -504,7 +504,7 @@ impl Config {
     /// a type, and the Rust path should correspondingly refer to a Rust module or type.
     ///
     /// ```rust
-    /// # let mut config = prost_build::Config::new();
+    /// # let mut config = ppsc_build::Config::new();
     /// // Declare the `uuid` Protobuf package and all nested packages and types as externally
     /// // provided by the `uuid` crate.
     /// config.extern_path(".uuid", "::uuid");
@@ -572,7 +572,7 @@ impl Config {
     /// # Examples
     ///
     /// ```rust
-    /// # let mut config = prost_build::Config::new();
+    /// # let mut config = ppsc_build::Config::new();
     /// // Full type URL of the message `google.profile.Person`,
     /// // will be `type.googleapis.com/google.profile.Person`.
     /// config.type_name_domain(&["."], "type.googleapis.com");
@@ -637,7 +637,7 @@ impl Config {
     /// fn main() -> std::io::Result<()> {
     ///   let file_descriptor_set = fds();
     ///
-    ///   prost_build::Config::new()
+    ///   ppsc_build::Config::new()
     ///     .compile_fds(file_descriptor_set)
     /// }
     /// ```
@@ -706,7 +706,7 @@ impl Config {
     /// Compile `.proto` files into Rust files during a Cargo build with additional code generator
     /// configuration options.
     ///
-    /// This method is like the `prost_build::compile_protos` function, with the added ability to
+    /// This method is like the `ppsc_build::compile_protos` function, with the added ability to
     /// specify non-default code generation options. See that function for more information about
     /// the arguments and generated outputs.
     ///
@@ -717,9 +717,9 @@ impl Config {
     /// ```rust,no_run
     /// # use std::io::Result;
     /// fn main() -> Result<()> {
-    ///   let mut prost_build = prost_build::Config::new();
-    ///   prost_build.btree_map(&["."]);
-    ///   prost_build.compile_protos(&["src/frontend.proto", "src/backend.proto"], &["src"])?;
+    ///   let mut ppsc_build = ppsc_build::Config::new();
+    ///   ppsc_build.btree_map(&["."]);
+    ///   ppsc_build.compile_protos(&["src/frontend.proto", "src/backend.proto"], &["src"])?;
     ///   Ok(())
     /// }
     /// ```

@@ -263,10 +263,7 @@ impl<'b> CodeGenerator<'_, 'b> {
             self.push_mod(&message_name);
             self.path.push(3);
             self.push_indent();
-            self.buf.push_str("extern crate alloc;\n");
-            self.push_indent();
-            self.buf
-                .push_str("use parity_scale_codec::{Decode, Encode};\n\n");
+            self.buf.push_str("use super::*;\n\n");
             for (nested_type, idx) in nested_types {
                 self.path.push(idx as i32);
                 self.append_message(nested_type);
@@ -740,7 +737,7 @@ impl<'b> CodeGenerator<'_, 'b> {
             Type::Int32 | Type::Sfixed32 | Type::Sint32 | Type::Enum => String::from("i32"),
             Type::Int64 | Type::Sfixed64 | Type::Sint64 => String::from("i64"),
             Type::Bool => String::from("bool"),
-            Type::String => String::from("String"),
+            Type::String => String::from("alloc::string::String"),
             Type::Bytes => self
                 .context
                 .bytes_type(fq_message_name, field.name())

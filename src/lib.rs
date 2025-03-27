@@ -86,7 +86,7 @@ pub trait ServiceGenerator {
 /// ```rust,no_run
 /// # use std::io::Result;
 /// fn main() -> Result<()> {
-///   prost_build::compile_protos(&["src/frontend.proto", "src/backend.proto"], &["src"])?;
+///   ppsc_build::compile_protos(&["src/frontend.proto", "src/backend.proto"], &["src"])?;
 ///   Ok(())
 /// }
 /// ```
@@ -116,7 +116,7 @@ pub fn compile_protos(protos: &[impl AsRef<Path>], includes: &[impl AsRef<Path>]
 /// fn main() -> std::io::Result<()> {
 ///   let file_descriptor_set = fds();
 ///
-///   prost_build::compile_fds(file_descriptor_set)
+///   ppsc_build::compile_fds(file_descriptor_set)
 /// }
 /// ```
 ///

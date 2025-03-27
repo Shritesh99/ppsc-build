@@ -8,8 +8,7 @@ pub struct Container {
 }
 /// Nested message and enum types in `Container`.
 pub mod container {
-    extern crate alloc;
-    use parity_scale_codec::{Decode, Encode};
+    use super::*;
 
         #[derive(Encode, Decode)]
     pub enum Data {
@@ -19,7 +18,7 @@ pub mod container {
 }
 #[derive(Encode, Decode)]
 pub struct Foo {
-    pub foo: String,
+    pub foo: alloc::string::String,
 }
 #[derive(Encode, Decode)]
 pub struct Bar {

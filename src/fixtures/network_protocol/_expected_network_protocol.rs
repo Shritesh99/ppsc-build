@@ -4,7 +4,7 @@ use parity_scale_codec::{Encode, Decode};
 
 #[derive(Encode, Decode)]
 pub struct Entity {
-    pub id: String,
+    pub id: alloc::string::String,
     pub ip_address: u32,
 }
 #[derive(Encode, Decode)]
@@ -17,21 +17,20 @@ pub struct TransactionRequest {
     pub is_priority: bool,
     pub transaction_id: u64,
     pub creation_time: i64,
-    pub memo: String,
-    pub associated_ids: alloc::vec::Vec<String>,
-    pub metadata: alloc::collections::BTreeMap<String, u32>,
+    pub memo: alloc::string::String,
+    pub associated_ids: alloc::vec::Vec<alloc::string::String>,
+    pub metadata: alloc::collections::BTreeMap<alloc::string::String, u32>,
     pub sender: Option<Entity>,
     pub status: i32,
     pub result: Option<transaction_request::Result>,
 }
 /// Nested message and enum types in `TransactionRequest`.
 pub mod transaction_request {
-    extern crate alloc;
-    use parity_scale_codec::{Decode, Encode};
+    use super::*;
 
         #[derive(Encode, Decode)]
     pub enum Result {
-        Error(String),
+        Error(alloc::string::String),
         Amount(super::AmountDetails),
     }
 }
