@@ -21,7 +21,9 @@ $ cargo add --build ppsc-build
 $ cargo add parity-scale-codec
 ```
 
-Next, add `src/items.proto` to the project:
+### Example
+
+Create a file `src/items.proto` to the project:
 
 ```proto
 syntax = "proto3";
@@ -47,10 +49,24 @@ message Shirt {
 To generate Rust code from `items.proto`, we use `ppsc-build` in the crate's `build.rs` build-script:
 
 ```rust
-use std::io::Result;
+extern create ppsc_build;
+
 fn main() -> Result<()> {
     ppsc_build::compile_protos(&["src/items.proto"], &["src/"])?;
     Ok(())
+}
+```
+
+Or using the `Config`
+
+```rust
+use ppsc_build::Config as Config;
+
+fn main() {
+    Config::new()
+        .out_dir("src")
+        .compile_protos(&["src/items.proto"], &["src/"])
+        .unwrap();
 }
 ```
 
@@ -61,7 +77,7 @@ And finally, in `lib.rs`, include the generated code:
 // It is important to maintain the same structure as in the proto.
 pub mod snazzy {
     pub mod items {
-        include!(concat!(env!("OUT_DIR"), "/snazzy.items.rs"));
+        include!("snazzy.items.rs");
     }
 }
 
@@ -69,11 +85,29 @@ use snazzy::items;
 
 /// Returns a large shirt of the specified color
 pub fn create_large_shirt(color: String) -> items::Shirt {
-    let mut shirt = items::Shirt::default();
-    shirt.color = color;
-    shirt.set_size(items::shirt::Size::Large);
+    let shirt = items::Shirt {
+        color,
+        size: items::shirt::Size::Large as i32,
+    };
     shirt
 }
+```
+
+Encoding:
+
+```rust
+let shirt = items::Shirt {
+    color: "red".to_string(),
+    size: items::shirt::Size::Large as i32,
+};
+
+let encoded = shirt.encode();
+```
+
+Decoding:
+
+```rust
+let decoded = items::Shirt::decode(&mut &encoded[..]).unwrap();
 ```
 
 ### Inspirition
